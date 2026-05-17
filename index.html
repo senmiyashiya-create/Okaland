@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#f3f3f1" />
+  <title>你许愿的世界</title>
+  <meta name="description" content="GLITCHES / 20080218" />
+  <style>
+    :root {
+      --paper: #f8fafb;
+      --paper-2: #ffffff;
+      --ink: #171b20;
+      --soft-ink: #2f363d;
+      --muted: #8c949c;
+      --pale: rgba(20, 28, 36, .035);
+      --line: rgba(25, 35, 45, .13);
+      --line-soft: rgba(25, 35, 45, .055);
+      --terminal: #090909;
+      --terminal-text: #e6e2da;
+      --terminal-muted: #77746d;
+      --terminal-red: #c64b4b;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-height: 100%; background: var(--paper); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+    body {
+      margin: 0;
+      min-height: 100%;
+      color: var(--ink);
+      background: #f8fafb;
+      font-family: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "SimSun", serif;
+      text-rendering: optimizeLegibility;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    ::selection { background: rgba(10, 22, 32, .12); }
+
+    .stage {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 760ms ease;
+    }
+    .stage.is-active { opacity: 1; pointer-events: auto; }
+
+    /* 1. terminal — no window frame, closest to the first version */
+    #terminal {
+      display: grid;
+      place-items: center;
+      padding: 2rem;
+      background:
+        linear-gradient(rgba(255,255,255,.025) 50%, rgba(0,0,0,.035) 50%),
+        #090909;
+      background-size: 100% 3px;
+      color: var(--terminal-text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+      letter-spacing: .03em;
+    }
+    .terminal { width: min(34rem, 92vw); transform: translateY(-6.0rem); }
+    .terminal-line {
+      min-height: 1.55em;
+      margin: .55rem 0;
+      font-size: clamp(12px, 2.55vw, 15px);
+      line-height: 1.65;
+      white-space: pre-wrap;
+      color: var(--terminal-text);
+    }
+    .terminal-line.is-error { color: var(--terminal-red); }
+    .cursor::after { content: "_"; display: inline-block; margin-left: 2px; animation: blink .72s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    /* 2. title card */
+    #title-card {
+      display: grid;
+      place-items: center;
+      background: #f8fafb;
+      overflow: hidden;
+    }
+    #title-card::before { content: none; }
+    .title-inner {
+      position: relative;
+      z-index: 1;
+      transform: translateY(-1vh);
+      text-align: center;
+      font-size: clamp(13px, 2.6vw, 18px);
+      letter-spacing: .42em;
+      color: #20262b;
+      font-weight: 400;
+      opacity: .9;
+      text-indent: .42em;
+    }
+    .title-inner .thin { letter-spacing: .06em; color: #7b8389; text-indent: 0; }
+
+    /* 3. article — soft greys / independent artist page */
+    main {
+      min-height: 100vh;
+      opacity: 0;
+      transition: opacity 1050ms ease;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      background: #f8fafb;
+    }
+    main.is-visible { opacity: 1; }
+    main::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -3;
+      background:
+        linear-gradient(180deg, #f9fbfc 0%, #f7f8f8 46%, #fafbfb 100%);
+      pointer-events: none;
+    }
+    main::after {
+      content: "";
+      position: fixed;
+      right: clamp(18px, 6vw, 88px);
+      top: 0;
+      width: 1px;
+      height: 100%;
+      background: rgba(26, 28, 28, .055);
+      pointer-events: none;
+      z-index: -2;
+    }
+    .cold-mark, .shard { display: none; }
+
+    .page {
+      width: min(100% - 36px, 1040px);
+      margin: 0 auto;
+      padding: clamp(48px, 7.2vw, 92px) 0 104px;
+    }
+    .article-shell {
+      position: relative;
+      display: grid;
+      grid-template-columns: minmax(86px, 146px) minmax(0, 610px);
+      column-gap: clamp(28px, 5vw, 80px);
+      align-items: start;
+      width: min(100%, 860px);
+      margin: 0 auto;
+      padding: clamp(18px, 4vw, 44px) clamp(10px, 3vw, 34px) clamp(48px, 7vw, 82px);
+      background: transparent;
+      border-top: 1px solid rgba(28, 30, 30, .085);
+    }
+    .meta-row {
+      grid-column: 1;
+      position: sticky;
+      top: 46px;
+      display: block;
+      margin: 0;
+      padding: 18px 0 0;
+      border: 0;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+      color: rgba(35, 37, 37, .54);
+      font-size: 11px;
+      line-height: 1.7;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+    .meta-row span { display: block; }
+    .meta-row span + span { margin-top: 16px; color: rgba(35, 37, 37, .40); }
+    .article-head {
+      grid-column: 2;
+      position: relative;
+      margin: 0 0 clamp(48px, 6.5vw, 72px);
+      padding: 0 0 24px;
+      border-bottom: 1px solid rgba(25, 27, 27, .075);
+    }
+    .article-head::before {
+      content: "";
+      position: absolute;
+      left: -22px;
+      top: .72em;
+      width: 12px;
+      height: 1px;
+      background: rgba(23, 24, 24, .48);
+    }
+    h1 {
+      margin: 0;
+      text-align: left;
+      font-family: "Songti SC", "Noto Serif CJK SC", "Source Han Serif SC", "Hiragino Mincho ProN", "SimSun", serif;
+      font-weight: 400;
+      font-size: clamp(15px, 2.45vw, 20px);
+      line-height: 1.9;
+      letter-spacing: .18em;
+      color: #191a1a;
+      text-indent: .18em;
+    }
+    .head-note {
+      margin-top: 19px;
+      color: rgba(34, 36, 36, .52);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.66;
+      letter-spacing: .12em;
+      text-transform: none;
+    }
+    .head-note em {
+      font-family: "Times New Roman", "Songti SC", serif;
+      font-style: italic;
+      letter-spacing: .055em;
+    }
+    .subdate { display: none; }
+    .article-rule { display: none; }
+    .article-rule::after { content: none; }
+    article {
+      grid-column: 2;
+      width: min(100%, 590px);
+      margin: 0;
+      font-family: "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans", "Hiragino Sans GB", "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif;
+      font-size: 15px;
+      line-height: 2.02;
+      letter-spacing: 0;
+      color: rgba(28, 30, 30, .80);
+      font-weight: 300;
+      font-kerning: normal;
+      font-variant-east-asian: proportional-width;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      hanging-punctuation: allow-end;
+    }
+    article p {
+      margin: 0 0 1.08em;
+      text-align: left;
+      text-indent: 2em;
+    }
+    article p:nth-child(11n) { color: inherit; }
+    .space { height: 2.25em; }
+    .end {
+      margin-top: 4.6em;
+      text-align: left !important;
+      text-indent: 0 !important;
+      color: rgba(31, 33, 33, .48);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+      letter-spacing: .16em;
+      font-size: .78em;
+    }
+    .footer-mark {
+      grid-column: 2;
+      width: 100%;
+      margin: 82px 0 0;
+      padding-top: 15px;
+      border-top: 1px solid rgba(24, 26, 26, .075);
+      color: rgba(45,47,47,.48);
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.66;
+      letter-spacing: .12em;
+      text-transform: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    @media (max-width: 640px) {
+      #terminal { place-items: center; }
+      .terminal { transform: translateY(-6.4rem); }
+      .terminal-line { font-size: 12px; line-height: 1.62; margin: .48rem 0; }
+      .page { width: min(100% - 28px, 720px); padding-top: 42px; padding-bottom: 76px; }
+      .article-shell {
+        display: block;
+        width: 100%;
+        padding: 22px 10px 54px;
+        background: transparent;
+      }
+      .meta-row {
+        position: static;
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 34px;
+        padding-top: 10px;
+        font-size: 10.8px;
+        line-height: 1.58;
+      }
+      .meta-row span + span { margin-top: 0; text-align: right; }
+      .article-head { margin-bottom: 38px; padding-bottom: 20px; }
+      .article-head::before { left: 0; top: -15px; width: 18px; height: 1px; }
+      h1 { font-size: 16px; letter-spacing: .15em; text-indent: .15em; }
+      .head-note { margin-top: 15px; font-size: 9.8px; letter-spacing: .10em; }
+      article { width: 100%; font-size: 14.7px; line-height: 1.96; letter-spacing: 0; font-weight: 300; }
+      article p { text-align: left; text-indent: 2em; margin-bottom: 1.04em; }
+      main::after { right: 12px; opacity: .55; }
+      .shard, .cold-mark { display: none; }
+      .footer-mark { display: block; font-size: 9.8px; }
+      .footer-mark span { display: block; }
+      .footer-mark span + span { margin-top: 6px; }
+    }
+
+
+
+    @media (min-width: 641px) and (max-width: 900px) {
+      article { font-size: 15px; line-height: 2.03; letter-spacing: 0; font-weight: 300; }
+      article p { margin-bottom: 1.14em; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .stage { display: none; }
+      main { opacity: 1; }
+      .cursor::after { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <section id="terminal" class="stage is-active" aria-label="archive loading screen">
+    <div class="terminal" id="terminal-lines"></div>
+  </section>
+
+  <section id="title-card" class="stage" aria-label="title card">
+    <div class="title-inner"><span class="thin">——</span>　你 许 愿 的 世 界　<span class="thin">——</span></div>
+  </section>
+
+  <main id="article-page">
+    <div class="cold-mark">GLITCHES</div>
+    <i class="shard s1" aria-hidden="true"></i>
+    <i class="shard s2" aria-hidden="true"></i>
+    <i class="shard s3" aria-hidden="true"></i>
+    <div class="page">
+      <div class="article-shell">
+        <div class="meta-row">
+          <span>posted / 2008-02-18</span>
+          <span>？？？ &amp; Agent Juno</span>
+        </div>
+        <header class="article-head">
+          <h1>你许愿的世界</h1>
+          <div class="head-note">Missing Story From <em>Delta Green</em></div>
+        </header>
+        <article>
+<p>你在椅子上醒来。早餐角的硬质木椅还是让年过三十的人有些吃不消，虽然屁股下面垫了柔软的坐垫。贝拉自己挑的布自己缝的。你想起来。贝拉当时布置这个早餐角的时候可费了不少心思，如果不是编织蕾丝实在太过于复杂，她怕不是要连桌垫一起自己做。而即便是她真的不会编织蕾丝，她也还是试着做了两人用的蕾丝杯垫。 </p>
+<p>——这里有个豁口和错结。</p>
+<p>你抚摸着垫在咖啡杯下的蕾丝杯垫，脑子里突然冒出这句话。毫无疑问这是贝拉的杰作，自己称之为爱的瑕疵而抢来用了。</p>
+<p>“洛克，你还没醒过来吗？”</p>
+<p>贝拉举着咖啡壶走过来，热腾腾的美式咖啡散发着浓郁的香气，倾注进你眼前的马克杯里，热气氤氲中贝拉的脸显得更加柔美。虽然她时常说着自己产后皮肤没有恢复好，留下了一些色素斑，但说实话，就算靠得那么近，你也没有发现过一点点有损于贝拉美貌的不和谐音符。</p>
+<p>“N.P.P.D加班那么严重吗？今天也要？”贝拉在桌上放下了壶，壶嘴没倒干净的咖啡液顺着透明的弧线滑下来，滴在洁白的桌布上，很快变成一块难以洗干净的褐色斑点。</p>
+<p>你下意识地就拿起纸巾去擦了。只是污渍虽小，延展性却好。在贝拉指指你之前，那一滴圆润的褐色就被你手里的纸巾拉长出了一个尾巴。</p>
+<p>有点像鲸鱼。你想着。</p>
+<p>“好了桌面画图大师。”贝拉无奈地笑出了声，手指抚摸过那只“鲸鱼”，“早点吃东西去床上休息一会儿，你下午是不是还有事？”</p>
+<p>“这个鲸鱼？鲸鱼没关系的。我会在你休息的时候给这里绣上一只漂亮的鲸鱼，你喜欢的那种……深蓝色怎么样？”在你起身张开嘴巴的时候，贝拉像已经理解了你在说什么一样，轻声安慰了你。</p>
+<p>于是你从善如流地回到卧室，在腰部咔吧咔吧的声响中陷入了柔软的床铺里，蓬松的枕头承托着你的颈椎。你熟练地找到自己最喜欢的位置——贝拉曾多次提醒你侧睡对身体不好，但是你就喜欢——然后拿出了手机，FancyBook上有几条私信，都是无关痛痒的熟人聊天，掺杂着转发给你的文章和大量的LOL。就在你翻看的时候，一个日程提醒从上方跳了出来。</p>
+<p>【15:00 剧院 重要会见】</p>
+<p>日程提醒的内容相当简单，你下意识地往下滑，在详细内容是一片远胜于天花板的雪白。但你知道你会到哪里，会见到谁。</p>
+<p>你安心地睡了个回笼觉。</p>
+<div class="space" aria-hidden="true"></div>
+<p>中午你醒过来的时候贝拉为你准备了美味的午餐，但遗憾的是你没能和她一起用餐——温妮早早地接走了贝拉和你们的宝宝。你只接到了一个电话，电话里的声音温和地问你是否需要接送。你站在浴室里思考了片刻，脑子里闪过贝拉给你准备的午饭，给出了否定答案。</p>
+<p>吃饱后的身体带着多少有些无处发泄的精力，最终你还是把车钥匙留在了鞋柜上的磁盘里。也许带着一点点“早知道应该答应他搭个顺风车”之类的后悔，你整理好衣服步行前往站台。</p>
+<p>“洛。”</p>
+<p>你停住了脚步。眼前驶过的漂亮改装车唐突停下，你听到电话里的那个声音此刻喊了你的名字，亚当森·考克斯的脸从逐渐下落的车窗后显露出来。他戴着一个相当愚蠢的墨镜——拜托谁会在双月永远照耀的城市戴墨镜？可他戴着，不仅戴着，上面还有向日葵装饰，你知道这是温妮去年送给他的生日礼物。</p>
+<p>他伸出胳膊用力够向了副驾驶的车门，啪嗒一下子打开了。</p>
+<p>“上车吧，你走过去一身汗，也会很累的。”</p>
+<p>你想绕过车头，顺着斑马线继续往前走，只不过走了50米而已，你并不觉得累。你并不会觉得疲惫。</p>
+<p>你坐上了亚当森的副驾驶席。</p>
+<p>汽车引擎带动着车身有规律地颤抖，然后在你上车后逐渐升上了约离地10米的空中，这是小型车的快速道，执法机构特权。你觉得自己连同汽车一起颤抖了起来，牙齿磕碰着，发出一点代表着疼痛的呻吟。</p>
+<p>亚当森·考克斯吻了你。在这个狭小的，平静的，散发着淡淡乌木车内香氛的车内，他娴熟地将方向盘交给了自动驾驶，为了亲吻你。</p>
+<p>那是一种很奇妙的感觉，特别是你知道你们刚分开没几个小时。虽然上一次见面时你们只是努力工作，皮肤接触也仅限于结束时的拥抱。但现在他离你那么近，心跳像鼓动的海浪。</p>
+<p>这好像是你们每次见面的必备礼节，依靠着亲吻和抚摸确认彼此的存在。</p>
+<p>狭小的车内，你感受着亚当森身体的热度。你记得你抱怨过为何不能把车安装扩展座位——可以躺下的那种——却换来了亚当森委屈的表情。他抱着那辆改装过数次、看起来就像蝙蝠侠座驾的车眼巴巴地看着你，说“NO，PLEASE”。</p>
+<p>现在，在亚当森的手从你的衬衫下摆伸进去抚摸你光滑的背脊时，你又重复了一次相同的诉求，大概。</p>
+<p>“洛，亲爱的洛。”亚当森的亲吻落在你的颈侧，手指点燃着你的欲望，这在“这里”显然是合法合理，无法被任何人非议的一件事，“蝙蝠侠的车也不能躺下啊！”</p>
+<p>你接受了这样的答案，或者没有接受，你自己已经记不清了。你说出口的话好像被丢进水里的泡腾片，咕嘟咕嘟，啪啦啪啦，只剩下模糊不清的气泡冒出来，被亚当森舔舐。仪表盘与档位限制了你们的动作，即便你再怎么舒展自己的身体去配合，被情欲侵染得最严重的也只是你的手与被反复爱抚的下身。</p>
+<p>你记得亚当森说你太秀气了。在说这句话的时候贝拉就在你旁边，她眨巴着眼睛，在你说出任何话之前“啪”地拍了一下亚当森的脑袋，然后你才意识到他在隐晦地表达什么。你在怒斥和反驳之间局促地选择着，冷不防被贝拉抱紧，软乎乎的嘴唇亲吻上来，就像现在的亚当森一样。她稍显有些笨拙的手指解开你的衣服，握住了被亚当森说“秀气”的那一部分——</p>
+<p>“嘿，洛！”</p>
+<p>亚当森喊着你的名字，半透明的体液喷溅在他的掌心，他正小心地捧起那些收集起来。你意识到刚才的一瞬间，在自己被迫攀上性欲高峰时喊出的是贝拉的名字。</p>
+<p>“我真伤心，洛，”亚当森的声音一如既往的温和，只是稍微掺杂了一点委屈似的，虽然你知道这是他的把戏，但你不得不承认你每次都会被这语调所欺骗，“我以为你会更——哦对不起我们说好了不谈论这个话题，但是我确实是有一点伤心，贝拉今天在你出门前没有给你一个香甜的KISS吗？”</p>
+<p>你内心肯定了一下，旋即又否定了。你并不确定，毕竟你当时睡着了，而贝拉也许在你睡着时像亲吻睡美人的王子一样吻了你，这可能性说实话值得80%以上的肯定。</p>
+<p>所以你否定了亚当森，以一种别扭而曲折偏绕的方式。亚当森对你定语冗长得仿佛书面语的句子并没有任何打断与不满，他只是拿出自己的手帕，一边仔细地擦着你们两人身上——主要是他手上你的精液，一边笑着听你说话，在不存在于口语中的句号从你嘴里轻飘飘落下来之后，亚当森把中间湿透的手帕叠成了花型，塞进你西装胸口的口袋里。</p>
+<p>你知道一件休闲西装不需要丝巾的。亚当森也知道。</p>
+<div class="space" aria-hidden="true"></div>
+<p>亚当森把你送到站台后没有下车，他只是降落滑行了一小段后停稳帮你打开了安全带。你转身走进车站，透明的水晶门映出他对你挥手道别的样子。你犹豫了一下还是对他招了招手，低头手机上就多了一条消息。你看着文字在气泡里问你晚上需不需要接你回家，路过门口红衣的但丁。你瞥了他一眼然后继续回复消息，而他看了你一眼，也没有给你多一份关注。</p>
+<p>剧院旁站台上的约瑟芬又看到你，她的笑容带着些许疲倦和餍足。你已经路过她许多次，她每次依然会对你问好。</p>
+<p>“……你看到吉姆了吗？”</p>
+<p>你脚步停顿，下意识地看向她，约瑟芬却像已经忘记了自己说过什么似的，脸上露出有些困惑的表情，对你歪头笑了笑。</p>
+<p>你没有再多停留，拉开车厢的门迈步而入，熟悉的安心感载着你从城市上空呼啸而过。蒸汽机的汽笛声远远传出，像巨鲸的交谈。车轮压过铁轨发出令人舒适的喀拉喀拉，喀拉喀拉，你仅仅是站在这柔软的长绒红地毯上都觉得有些昏昏欲睡。</p>
+<p>“你昨晚没有好好休息吗？洛。”</p>
+<p>你落进了如同细密蛛网织成的怀抱，以至于你不得不承认这很舒服。灰色的双眼落在你的脸上，你仰起头，看到亚当森俯下身，仔细地检查着你的脸色。他怀抱着你，有些潮湿冰凉的手指描摹过你下颌角的曲线，你知道自己站在体重秤上时又增加了一磅，但他摸着你像摩挲过一个易碎的瓷器。</p>
+<p>“或许我们应该换个更‘安全’的地方，如果这能让你觉得更‘安全’的话。”</p>
+<p>软包的门轻盈地滑向一侧，露出另一侧柔软的双人床。深红的天鹅绒搭配金色的装饰让你一瞬间以为自己躺在王的寝殿——王？——你疑惑，但疑惑也被抹去，你本身就只是在于侍奉，你想起了这一点。</p>
+<p>亚当森脱去你衣物的动作优雅又克制，让你想起某种在深海游曳的大型刺胞动物。它们如此柔软地缠上猎物的身体，如同丝绸，又毫不客气地镌刻毒液。但这不是毒液。亚当森的手指抚摸过你赤裸的胸膛，你都想不到自己是什么时候被脱光了缠绕身体的布料，赤裸得像个幼儿，袒露着最隐秘的部位。</p>
+<p>半小时之前刚发泄过一次的性器柔顺地躺在亚当森的掌心，他随意地揉了揉，好像把玩着某种廉价的小玩具。随后，他的手指顺着往下，你意识到他的目的地在哪里。背德的愉悦和被填满的预感紧紧抓住你的脊椎。抓着，往上攀爬，轻易地拽住了你的胸椎。你不愿也不能抗拒的快乐令你的心脏跳得像夜店敲击的架子鼓。</p>
+<p>亚当森捧着你的脸亲吻，比车上的亲吻更深，却更平和，你的舌头被缠绕拉扯，绞紧拽出口腔，滴滴答答地落下透明的唾液。但你知道这只是普通的亲吻。他捧着你双颊的手掌带上了你的体温，变得温热而惹人怜爱。</p>
+<p>轻微的潮湿与腐败气味蔓延在整个软卧包厢中，你被彼此舔舐的舌头搅得神魂颠倒，胸口充斥着应该算是幸福的满足感与些微的疼痛，毛茸茸的，有些痒。</p>
+<p>哦，好痒。也许你想说这句话，像是对亚当森的抱怨。但并没有任何机会，强烈的快乐已经灌入你的大脑，你的神经，连胸口逐渐加重的刺痛也变得不重要了起来，或者说这也不过是性爱的一部分，让你的快乐更加鲜明。</p>
+<p>你抱住了自己的双腿，亚当森请你抱住了你自己的双腿。腐败的黄色蔓延在你的身下，投影在你的身上，冰凉，舒适，让你火热的身体不愿逃离，只希望永远攀附其上。有什么东西代替你的想象和欲望切实地填满了你身下的洞。你第一次舒适地长叹出声。祂将目光从徘徊的智慧与永恒中抽离片刻，落在你的身上。</p>
+<p>你感到强烈的窒息。</p>
+<p>海水混杂着大量你或认识或不认识的图像冲进你的喉管，灌满你的胃袋。你赤身裸体地徘徊在人类历史的长河中，十字军东征的铠甲与蒙古的铁骑从你身边呼啸而过，你摔倒在波斯的绒毯上，香膏浇筑在你的身上却只激发象征欲望的腥膻。站在露台上的少女仰望着与你印象不同的月夜，悲叹着为何相爱的人被家族拆散。你看到爆炸与新生。横飞的血肉与重新凝聚的行星交替出现，你试图爬行，从这些不理解的含义逃离。</p>
+<p>于是祂把你从这些尘世中捡起，纤长的手指梳理着你汗湿的头发，触手抽动着擦过你的肉体。理智与身体的枷锁都被打开，一遍又一遍并不停止的快乐像永不停止的海浪拍打冲刷着你。你越来越靠近祂。你感到幸福。</p>
+<p>“你该好好休息的，洛。”</p>
+<p>你试图睁开眼睛，伸手握住什么。亚当森只是俯下身，温柔地吻了吻你的额头，为你裹上了毛毯。</p>
+<div class="space" aria-hidden="true"></div>
+<p>你苏醒，在舒适的被褥间一丝不挂如同新生，胸口被重新描绘的印记鲜红得滴下血来，而被反复使用红肿的地方则彰显着其存在感。你站起身，干涸了的精液让你的皮肤发痒，四处散落的衣服则让没睡醒的大脑有些头疼该先捡起哪件套在身上。</p>
+<p>但不论如何，你穿上了。巨大的水母——你记得是幽灵水母——舒展地游过你的车窗，映出你苍白的脸，你发现自己脸上带着慵懒的、餍足的笑容。</p>
+<p>你信步走到餐车。吧台后的服务生带着一成不变的笑容开始为你准备红茶，或者说是看起来在为你准备红茶。你落座，茶杯正好出现在你的面前。</p>
+<p>滴答，滴答。</p>
+<p>不知悬挂在何处的老式钟表发出令人昏昏欲睡的发条声，你没有打开手机或者掏出手表确认时间，只是下意识地细数着脑海内钟摆摇摆的次数。一、二、三、四……</p>
+<p>你记着数。20080218唐突地出现在你的脑内。</p>
+<p>你睁开眼，听到对面的人用着你应当万分熟悉但实际却因为颅骨传导而总带有不同的声音喊出你的名字——啊，这是你的名字吗，你确定，你断定。</p>
+<p>“…………Juno。”</p>
+<p>“洛克希德·冈”坐在你面前看着你，嘴唇开开合合，却只吐出了这两个音节。你等待着。他过了一小会儿终于又发出声音。</p>
+<p>“我们回到了剧院。”</p>
+<p>你笑着，你摇摇头否定。“洛克希德”眼中毫不掩饰的厌恶与恶心点燃着你的快乐。</p>
+<p>你笑得如同被满足的怪物。</p>
+<p>“不。我属于这里。”</p>
+<div class="space" aria-hidden="true"></div>
+<p class="end">-END-</p>
+      </article>
+      <div class="footer-mark">
+        <span>Silence#07</span>
+        <span>GLITCHES / 20080218</span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const terminalLines = [
+      "REQUESTING ARCHIVE NODE: GLITCHES",
+      "VERIFYING LOCAL MEMORY CACHE...",
+      "ERROR 616 / RECORD REMOVED FROM PUBLIC INDEX",
+      "RECOVERING TEXT FRAGMENT...",
+      "ACCESS GRANTED"
+    ];
+
+    const lineHost = document.getElementById('terminal-lines');
+    const terminal = document.getElementById('terminal');
+    const titleCard = document.getElementById('title-card');
+    const articlePage = document.getElementById('article-page');
+
+    function sleep(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+
+    async function typeLine(text, index) {
+      const div = document.createElement('div');
+      div.className = 'terminal-line cursor' + (index === 2 ? ' is-error' : '');
+      lineHost.appendChild(div);
+      for (let i = 0; i < text.length; i++) {
+        div.textContent += text[i];
+        await sleep(text[i] === ' ' ? 8 : 18 + Math.random() * 10);
+      }
+      div.classList.remove('cursor');
+      await sleep(230);
+    }
+
+    async function runIntro() {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        articlePage.classList.add('is-visible');
+        return;
+      }
+      for (let i = 0; i < terminalLines.length; i++) await typeLine(terminalLines[i], i);
+      await sleep(620);
+      terminal.classList.remove('is-active');
+      await sleep(520);
+      titleCard.classList.add('is-active');
+      await sleep(2050);
+      titleCard.classList.remove('is-active');
+      await sleep(560);
+      articlePage.classList.add('is-visible');
+    }
+
+    runIntro();
+  </script>
+</body>
+</html>
