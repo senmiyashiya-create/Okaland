@@ -59,7 +59,7 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace;
       letter-spacing: .03em;
     }
-    .terminal { width: min(34rem, 92vw); transform: translateY(-6.0rem); }
+    .terminal { width: min(34rem, 92vw); transform: translateY(-3.2rem); }
     .terminal-line {
       min-height: 1.55em;
       margin: .55rem 0;
@@ -256,7 +256,7 @@
 
     @media (max-width: 640px) {
       #terminal { place-items: center; }
-      .terminal { transform: translateY(-6.4rem); }
+      .terminal { transform: translateY(-3.6rem); }
       .terminal-line { font-size: 12px; line-height: 1.62; margin: .48rem 0; }
       .page { width: min(100% - 28px, 720px); padding-top: 42px; padding-bottom: 76px; }
       .article-shell {
@@ -445,7 +445,7 @@
         return;
       }
       for (let i = 0; i < terminalLines.length; i++) await typeLine(terminalLines[i], i);
-      await sleep(620);
+      await sleep(900);
       terminal.classList.remove('is-active');
       await sleep(520);
       titleCard.classList.add('is-active');
